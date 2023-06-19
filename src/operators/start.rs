@@ -1,51 +1,40 @@
+use serde::{Deserialize, Serialize};
+
 use crate::data::{Game, Ranking};
-use crate::operators::{Handle, Operator};
-use std::collections::HashMap;
+use crate::operators::Operator;
 
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct StartOp {
-    pub(crate) size: usize,
-    pub(crate) seeding: Option<Ranking>,
-}
-
-#[derive(Hash, Eq, PartialEq, Debug)]
-pub enum StartInputs {}
-
-impl Handle for StartInputs {
-    fn to_handle(&self) -> String {
-        "".to_string()
-    }
-}
-
-#[derive(Hash, Eq, PartialEq, Debug)]
-pub enum StartOutputs {
-    Output,
-}
-
-impl Handle for StartOutputs {
-    fn to_handle(&self) -> String {
-        "Output".to_string()
-    }
+    seeding: Option<Ranking>,
+    output: Option<Ranking>,
 }
 
 impl StartOp {
-    pub fn init_seeding(&mut self, r: Ranking) {
+    pub fn set_seeding(&mut self, r: Ranking) {
         self.seeding = Some(r);
+    }
+
+    pub fn new() -> Self {
+        Default::default()
     }
 }
 
 impl Operator for StartOp {
-    type Inputs = StartInputs;
-    type Outputs = StartOutputs;
-
     fn init(&mut self) {}
 
-    fn update(
-        &mut self,
-        mut inputs: HashMap<StartInputs, Ranking>,
-    ) -> Result<HashMap<StartOutputs, Ranking>, String> {
-        match self.seeding {
-            None => Ok(HashMap::new()),
-            Some(ref r) => Ok(HashMap::from([(StartOutputs::Output, r.clone())])),
+    fn set_input(&mut self, _name: &str, _value: Ranking) -> Result<(), String> {
+        Err("Start does not accept inputs".to_string())
+    }
+
+    fn update(&mut self) {
+        self.output = self.seeding.clone();
+    }
+
+    fn get_output(&mut self, name: &str) -> Result<Ranking, String> {
+        if name == "Output" {
+            self.output.ok_or("No seeding set".to_string())
+        } else {
+            Err(format!("{name} is not an output"))
         }
     }
 

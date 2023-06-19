@@ -1,56 +1,42 @@
+use serde::{Deserialize, Serialize};
+
 use crate::data::{Game, Ranking};
-use crate::operators::{Handle, Operator};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use crate::operators::Operator;
 
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct EndOp {
-    pub(crate) size: usize,
-    pub(crate) ranking: Ranking,
-}
-
-#[derive(Hash, Eq, PartialEq, Debug)]
-pub enum EndInputs {
-    Input,
-}
-
-impl Handle for EndInputs {
-    fn to_handle(&self) -> String {
-        "Input".to_string()
-    }
-}
-
-#[derive(Hash, Eq, PartialEq, Debug)]
-pub enum EndOutputs {}
-
-impl Handle for EndOutputs {
-    fn to_handle(&self) -> String {
-        "".to_string()
-    }
+    ranking: Option<Ranking>,
+    input: Option<Ranking>,
 }
 
 impl EndOp {
-    fn get_ranking(&mut self) -> &Ranking {
-        &self.ranking
+    fn ranking(&mut self) -> Result<Ranking, String> {
+        self.ranking.ok_or("No end ranking found".to_string())
+    }
+
+    fn new() -> Self {
+        Default::default()
     }
 }
 
 impl Operator for EndOp {
-    type Inputs = EndInputs;
-    type Outputs = EndOutputs;
-
     fn init(&mut self) {}
 
-    fn update(
-        &mut self,
-        mut inputs: HashMap<EndInputs, Ranking>,
-    ) -> Result<HashMap<EndOutputs, Ranking>, String> {
-        match inputs.entry(EndInputs::Input) {
-            Entry::Occupied(ranking_entry) => {
-                self.ranking = ranking_entry.remove();
-                Ok(HashMap::new())
-            }
-            Entry::Vacant(_) => Err("Input missing".to_string()),
+    fn set_input(&mut self, name: &str, value: Ranking) -> Result<(), String> {
+        if name == "Input" {
+            self.input = Some(value);
+            Ok(())
+        } else {
+            Err(format!("{name} is not an input"))
         }
+    }
+
+    fn update(&mut self) {
+        self.ranking = self.input.take()
+    }
+
+    fn get_output(&mut self, _name: &str) -> Result<Ranking, String> {
+        Err("End has not outputs".to_string())
     }
 
     fn get_games(&self) -> Vec<Game> {

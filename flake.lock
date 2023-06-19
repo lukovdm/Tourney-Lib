@@ -1,7 +1,7 @@
 {
   "nodes": {
     "flake-utils": {
-      "Inputs": {
+      "inputs": {
         "systems": "systems"
       },
       "locked": {
@@ -32,7 +32,7 @@
       }
     },
     "root": {
-      "Inputs": {
+      "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }
