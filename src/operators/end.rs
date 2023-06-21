@@ -10,11 +10,13 @@ pub struct EndOp {
 }
 
 impl EndOp {
-    fn ranking(&mut self) -> Result<Ranking, String> {
-        self.ranking.ok_or("No end ranking found".to_string())
+    pub fn ranking(&self) -> Result<Ranking, String> {
+        self.ranking
+            .clone()
+            .ok_or("No end ranking found".to_string())
     }
 
-    fn new() -> Self {
+    pub fn new() -> Self {
         Default::default()
     }
 }
@@ -35,8 +37,13 @@ impl Operator for EndOp {
         self.ranking = self.input.take()
     }
 
-    fn get_output(&mut self, _name: &str) -> Result<Ranking, String> {
+    fn get_output(&self, _name: &str) -> Result<Ranking, String> {
         Err("End has not outputs".to_string())
+    }
+
+    fn reset(&mut self) {
+        self.input = None;
+        self.ranking = None;
     }
 
     fn get_games(&self) -> Vec<Game> {

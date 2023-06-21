@@ -1,9 +1,6 @@
-use std::collections::hash_map::Entry::Occupied;
-use std::collections::HashMap;
-
 use petgraph::algo::toposort;
 use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
-use petgraph::visit::{EdgeRef, IntoEdgesDirected, IntoNodeReferences, NodeRef};
+use petgraph::visit::{EdgeRef, IntoNodeReferences, NodeRef};
 use petgraph::Direction;
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +18,6 @@ pub struct Node {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Edge {
-    pub(crate) size: u32,
     pub(crate) from: String,
     pub(crate) to: String,
     pub(crate) data: Option<Ranking>,
@@ -33,28 +29,28 @@ pub struct Tourney {
     pub(crate) ends: Vec<NodeIndex>,
 }
 
-impl Tourney {
-    pub fn new(size: usize) -> Self {
+impl Default for Tourney {
+    fn default() -> Self {
         let mut graph = StableDiGraph::new();
         let start = graph.add_node(Node {
             id: 0,
-            op: OperatorType::Start(StartOp {
-                size,
-                seeding: None,
-            }),
+            op: OperatorType::Start(StartOp::new()),
         });
         let end = graph.add_node(Node {
             id: 1,
-            op: OperatorType::End(EndOp {
-                size,
-                ranking: vec![],
-            }),
+            op: OperatorType::End(EndOp::new()),
         });
         Tourney {
             tourney: graph,
             starts: Vec::from([start]),
             ends: Vec::from([end]),
         }
+    }
+}
+
+impl Tourney {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn from_graph(g: StableDiGraph<Node, Edge>) -> Self {
@@ -90,18 +86,16 @@ impl Tourney {
     pub fn add_edge(
         &mut self,
         from: NodeIndex,
-        from_handle: String,
+        from_handle: &str,
         to: NodeIndex,
-        to_handle: String,
-        size: u32,
+        to_handle: &str,
     ) -> EdgeIndex {
         self.tourney.add_edge(
             from,
             to,
             Edge {
-                size,
-                from: from_handle,
-                to: to_handle,
+                from: from_handle.to_string(),
+                to: to_handle.to_string(),
                 data: None,
             },
         )
@@ -115,49 +109,38 @@ impl Tourney {
     }
 
     fn update_idx(&mut self, idx: NodeIndex) {
-        let mut input = HashMap::new();
-        let edge_idxs: Vec<EdgeIndex> = self
-            .tourney
-            .edges_directed(idx, Direction::Incoming)
-            .map(|e| e.id())
-            .collect();
-        for edge_idx in edge_idxs {
-            let mut weight = self.tourney.edge_weight(edge_idx).unwrap();
-            if let Some(ranking) = &weight.data {
-                input.insert(weight.to.clone(), ranking.clone());
+        let mut inputs = Vec::new();
+        for e_i in self.tourney.edges_directed(idx, Direction::Incoming) {
+            if let Some(data) = e_i.weight().data.clone() {
+                let name = &e_i.weight().to;
+                inputs.push((name.clone(), data.clone()));
             }
         }
-
-        if let Some(node) = self.tourney.node_weight(idx) {
-            match node.op {
-                Start(_) => {
-                    if let Start(ref mut op) = self.tourney.node_weight_mut(idx).unwrap().op {
-                        let mut res = op.update(HashMap::new()).expect("TODO: panic message");
-                    } else {
-                        panic!("Should not happen")
-                    }
-                }
-                End(ref op) => {
-                    if let End(ref mut op) = self.tourney.node_weight_mut(idx).unwrap().op {
-                        op.update(EndInputs::map_handle(input))
-                            .expect("Update error");
-                    } else {
-                        panic!("Should not happen")
-                    }
-                }
-                OperatorType::Split(ref op) => {}
-                OperatorType::RoundRobin(_) => {}
-            }
+        let node = self.tourney.node_weight_mut(idx).unwrap();
+        for (name, data) in inputs {
+            node.op.set_input(&*name, data).expect("Input not allowed");
         }
 
-        let edge_idxs: Vec<EdgeIndex> = self.tourney.edges(idx).map(|e| e.id()).collect();
-        for edge_idx in edge_idxs {
-            let mut weight = self.tourney.edge_weight_mut(edge_idx).unwrap();
-            if let Occupied(x) =
-                res.entry(StartOutputs::from_handle(&*weight.from).expect("Invalid from edge"))
-            {
-                weight.data = Some(x.remove())
-            }
+        node.op.update();
+
+        let mut output_names = Vec::new();
+        let mut outputs = Vec::new();
+        for e_o in self.tourney.edges(idx) {
+            let name = &e_o.weight().from;
+            output_names.push((name.clone(), e_o.id()));
+        }
+        let node = self.tourney.node_weight(idx).unwrap();
+        for (name, idx) in output_names {
+            outputs.push((node.op.get_output(&*name).expect("Input not allowed"), idx));
+        }
+        for (value, idx) in outputs {
+            self.tourney.edge_weight_mut(idx).unwrap().data = Some(value);
+        }
+    }
+
+    pub fn reset(&mut self) {
+        for node in self.tourney.node_indices().collect::<Vec<_>>() {
+            self.tourney.node_weight_mut(node).unwrap().op.reset()
         }
     }
 }

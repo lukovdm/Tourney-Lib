@@ -25,7 +25,65 @@ pub trait Operator {
 
     fn update(&mut self);
 
-    fn get_output(&mut self, name: &str) -> Result<Ranking, String>;
+    fn get_output(&self, name: &str) -> Result<Ranking, String>;
+
+    fn reset(&mut self);
 
     fn get_games(&self) -> Vec<Game>;
+}
+
+impl Operator for OperatorType {
+    fn init(&mut self) {
+        match self {
+            OperatorType::Start(o) => o.init(),
+            OperatorType::End(o) => o.init(),
+            OperatorType::Split(o) => o.init(),
+            OperatorType::RoundRobin(o) => o.init(),
+        }
+    }
+
+    fn set_input(&mut self, name: &str, value: Ranking) -> Result<(), String> {
+        match self {
+            OperatorType::Start(o) => o.set_input(name, value),
+            OperatorType::End(o) => o.set_input(name, value),
+            OperatorType::Split(o) => o.set_input(name, value),
+            OperatorType::RoundRobin(o) => o.set_input(name, value),
+        }
+    }
+
+    fn update(&mut self) {
+        match self {
+            OperatorType::Start(o) => o.update(),
+            OperatorType::End(o) => o.update(),
+            OperatorType::Split(o) => o.update(),
+            OperatorType::RoundRobin(o) => o.update(),
+        }
+    }
+
+    fn get_output(&self, name: &str) -> Result<Ranking, String> {
+        match &self {
+            OperatorType::Start(o) => o.get_output(name),
+            OperatorType::End(o) => o.get_output(name),
+            OperatorType::Split(o) => o.get_output(name),
+            OperatorType::RoundRobin(o) => o.get_output(name),
+        }
+    }
+
+    fn reset(&mut self) {
+        match self {
+            OperatorType::Start(o) => o.reset(),
+            OperatorType::End(o) => o.reset(),
+            OperatorType::Split(o) => o.reset(),
+            OperatorType::RoundRobin(o) => o.reset(),
+        }
+    }
+
+    fn get_games(&self) -> Vec<Game> {
+        match &self {
+            OperatorType::Start(o) => o.get_games(),
+            OperatorType::End(o) => o.get_games(),
+            OperatorType::Split(o) => o.get_games(),
+            OperatorType::RoundRobin(o) => o.get_games(),
+        }
+    }
 }

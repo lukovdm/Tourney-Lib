@@ -32,19 +32,24 @@ impl Operator for SplitOp {
     }
 
     fn update(&mut self) {
-        self.output = self.input.map(|mut x| {
+        self.output = self.input.as_mut().map(|x| {
             let y = x.split_off(self.at);
-            (x, y)
+            (x.clone(), y)
         });
     }
 
-    fn get_output(&mut self, name: &str) -> Result<Ranking, String> {
+    fn get_output(&self, name: &str) -> Result<Ranking, String> {
         match (name, &self.output) {
             ("Top", Some((t, _b))) => Ok(t.clone()),
             ("Bottom", Some((_t, b))) => Ok(b.clone()),
             (_, None) => Err("Output not ready".to_string()),
             _ => Err(format!("{name} is not an output")),
         }
+    }
+
+    fn reset(&mut self) {
+        self.input = None;
+        self.output = None;
     }
 
     fn get_games(&self) -> Vec<Game> {

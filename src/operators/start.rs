@@ -30,12 +30,17 @@ impl Operator for StartOp {
         self.output = self.seeding.clone();
     }
 
-    fn get_output(&mut self, name: &str) -> Result<Ranking, String> {
+    fn get_output(&self, name: &str) -> Result<Ranking, String> {
         if name == "Output" {
-            self.output.ok_or("No seeding set".to_string())
+            self.output.clone().ok_or("No seeding set".to_string())
         } else {
             Err(format!("{name} is not an output"))
         }
+    }
+
+    fn reset(&mut self) {
+        self.seeding = None;
+        self.output = None;
     }
 
     fn get_games(&self) -> Vec<Game> {
