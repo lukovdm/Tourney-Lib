@@ -5,7 +5,9 @@ use crate::operators::Operator;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct EndOp {
+    #[serde(skip)]
     ranking: Option<Ranking>,
+    #[serde(skip)]
     input: Option<Ranking>,
 }
 

@@ -23,11 +23,6 @@ mod tests {
 
         tourney.update();
 
-        // println!(
-        //     "{}",
-        //     serde_json::to_string(&tourney.tourney).expect("Serialization failed")
-        // );
-
         if let End(ref mut eo) = tourney.tourney[tourney.ends[0]].op {
             assert_eq!(
                 eo.ranking(),
@@ -41,10 +36,30 @@ mod tests {
     }
 
     #[test]
+    fn serialize_graph() {
+        let mut tourney = Tourney::new();
+        tourney.add_edge(tourney.starts[0], "Output", tourney.ends[0], "Input");
+        if let Start(ref mut so) = tourney.tourney[tourney.starts[0]].op {
+            so.set_seeding(vec![
+                Team { id: 0, name: None },
+                Team { id: 1, name: None },
+                Team { id: 2, name: None },
+            ])
+        }
+
+        tourney.update();
+
+        assert_eq!(
+            serde_json::to_string(&tourney.tourney).expect("Serialization failed"),
+            r#"{"nodes":[{"id":0,"op":{"Start":{}}},{"id":1,"op":{"End":{}}}],"node_holes":[],"edge_property":"directed","edges":[[0,1,{"from":"Output","to":"Input"}]]}"#
+        )
+    }
+
+    #[test]
     fn test_split_graph() {
         let graph: StableDiGraph<Node, Edge> =
             serde_json::from_str(
-                r#"{"nodes":[{"id":0,"op":{"Start":{"seeding":null}}},{"id":1,"op":{"End":{"ranking":null,"input":null}}},{"id":2,"op":{"End":{"ranking":null,"input":null}}},{"id":3,"op":{"Split":{"at":2,"input":null,"output":null}}}],"node_holes":[],"edge_property":"directed","edges":[[0,3,{"from":"Output","to":"Input","data":null}],[3,1,{"from":"Top","to":"Input","data":null}],[3,2,{"from":"Bottom","to":"Input","data":null}]]}"#).expect("Graph string incorrect");
+                r#"{"nodes":[{"id":0,"op":{"Start":{}}},{"id":1,"op":{"End":{}}},{"id":2,"op":{"End":{}}},{"id":3,"op":{"Split":{"at":2}}}],"node_holes":[],"edge_property":"directed","edges":[[0,3,{"from":"Output","to":"Input","data":null}],[3,1,{"from":"Top","to":"Input"}],[3,2,{"from":"Bottom","to":"Input"}]]}"#).expect("Graph string incorrect");
         let mut tourney = Tourney::from_graph(graph);
 
         if let Start(ref mut op) = tourney

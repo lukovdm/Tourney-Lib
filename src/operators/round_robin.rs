@@ -3,9 +3,7 @@ use crate::operators::Operator;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct RoundRobinOp {
-    size: u32,
-}
+pub struct RoundRobinOp {}
 
 impl Operator for RoundRobinOp {
     fn init(&mut self) {

@@ -6,7 +6,9 @@ use crate::operators::Operator;
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct SplitOp {
     at: usize,
+    #[serde(skip)]
     input: Option<Ranking>,
+    #[serde(skip)]
     output: Option<(Ranking, Ranking)>,
 }
 

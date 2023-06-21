@@ -20,6 +20,7 @@ pub struct Node {
 pub struct Edge {
     pub(crate) from: String,
     pub(crate) to: String,
+    #[serde(skip)]
     pub(crate) data: Option<Ranking>,
 }
 

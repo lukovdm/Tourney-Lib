@@ -5,7 +5,9 @@ use crate::operators::Operator;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct StartOp {
+    #[serde(skip)]
     seeding: Option<Ranking>,
+    #[serde(skip)]
     output: Option<Ranking>,
 }
 
